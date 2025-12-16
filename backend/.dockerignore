@@ -1,0 +1,22 @@
+target/
+*.log
+*.pid
+*.gz
+
+.git
+.gitignore
+.env
+
+frontend/
+node_modules/
+.vscode/
+.idea/
+*.iml
+
+# Maven wrapper files (if present)
+.mvn/
+wrapper/
+
+# OS files
+Thumbs.db
+.DS_Store
