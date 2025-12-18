@@ -20,13 +20,12 @@ public class UsuarioDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) {
         Usuario usuario = repo.findByUsername(username)
-            .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
 
         return User.builder()
-            .username(usuario.getUsername())
-            .password(usuario.getPassword()) // HASH do banco
-            .roles("USER")
-            .build();
+                .username(usuario.getUsername())
+                .password(usuario.getPassword()) 
+                .roles("USER")
+                .build();
     }
-
 }

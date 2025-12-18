@@ -1,49 +1,59 @@
 package com.exemplo.projeto.controller;
 
+import com.exemplo.projeto.model.Usuario;
+import com.exemplo.projeto.repository.UsuarioRepository;
 import com.exemplo.projeto.security.JwtUtil;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
-import com.exemplo.projeto.model.Usuario;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
-    private final UserDetailsService userDetailsService;
+    private final UsuarioRepository repo;
+    private final PasswordEncoder encoder;
     private final JwtUtil jwtUtil;
-    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
-    public AuthController(UserDetailsService userDetailsService, JwtUtil jwtUtil, org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
-        this.userDetailsService = userDetailsService;
+    public AuthController(UsuarioRepository repo, PasswordEncoder encoder, JwtUtil jwtUtil) {
+        this.repo = repo;
+        this.encoder = encoder;
         this.jwtUtil = jwtUtil;
-        this.passwordEncoder = passwordEncoder;
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Usuario body) {
-
-        UserDetails user =
-            userDetailsService.loadUserByUsername(body.getUsername());
-
-        if (passwordEncoder.matches(body.getPassword(), user.getPassword())) {
-            String token = jwtUtil.generateToken(user.getUsername());
-            System.out.println(token);
-            return ResponseEntity.ok(Map.of("token", token));
+    // ==================== Cadastro ====================
+    @PostMapping("/cadastro")
+    public ResponseEntity<?> cadastro(@RequestBody Usuario body) {
+        if (repo.findByUsername(body.getUsername()).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "username_taken"));
         }
 
-        return ResponseEntity.status(401)
-            .body(Map.of("error", "invalid_credentials"));
+        body.setPassword(encoder.encode(body.getPassword()));
+        repo.save(body);
+
+        String token = jwtUtil.generateToken(body.getUsername());
+        return ResponseEntity.ok(Map.of("token", token));
     }
 
+    // ==================== Login ====================
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Usuario body) {
+        var usuarioOpt = repo.findByUsername(body.getUsername());
+
+        if (usuarioOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of("error", "invalid_credentials"));
+        }
+
+        var usuario = usuarioOpt.get();
+
+        if (!encoder.matches(body.getPassword(), usuario.getPassword())) {
+            return ResponseEntity.status(401).body(Map.of("error", "invalid_credentials"));
+        }
+
+        // Gera token
+        String token = jwtUtil.generateToken(usuario.getUsername());
+        return ResponseEntity.ok(Map.of("token", token));
+    }
 }

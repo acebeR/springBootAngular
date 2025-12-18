@@ -23,13 +23,15 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
+                    "/auth/cadastro",
                     "/auth/login",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
-                ).permitAll()
+                ).permitAll() // libera sem autenticação
                 .anyRequest().authenticated()
             )
             .httpBasic(basic -> basic.disable())
             .build();
     }
+
 }
