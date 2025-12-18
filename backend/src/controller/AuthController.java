@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.Map;
+import com.exemplo.projeto.model.Usuario;
 
 @RestController
 @RequestMapping("/auth")
@@ -31,19 +31,19 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String password = body.get("password");
-        try {
-            UserDetails user = userDetailsService.loadUserByUsername(username);
-            if (user != null && passwordEncoder.matches(password, user.getPassword())) {
-                String token = jwtUtil.generateToken(username);
-                return ResponseEntity.ok(Map.of("token", token));
-            } else {
-                return ResponseEntity.status(401).body(Map.of("error", "invalid_credentials"));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(401).body(Map.of("error", "invalid_credentials"));
+    public ResponseEntity<?> login(@RequestBody Usuario body) {
+
+        UserDetails user =
+            userDetailsService.loadUserByUsername(body.getUsername());
+
+        if (passwordEncoder.matches(body.getPassword(), user.getPassword())) {
+            String token = jwtUtil.generateToken(user.getUsername());
+            System.out.println(token);
+            return ResponseEntity.ok(Map.of("token", token));
         }
+
+        return ResponseEntity.status(401)
+            .body(Map.of("error", "invalid_credentials"));
     }
+
 }
